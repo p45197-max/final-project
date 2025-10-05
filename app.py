@@ -1,14 +1,21 @@
 import streamlit as st
 import joblib
 import pandas as pd
+import pickle # Import pickle
 
 # Load the trained model, scaler, and training column names
-# Make sure these files (gradient_boosting_model.joblib, scaler.joblib, training_columns.joblib)
+# Make sure these files (gradient_boosting_model.pkl, scaler.pkl, training_columns.joblib)
 # are in the same directory as your app.py file when deploying.
 try:
-    gb_model = joblib.load('gradient_boosting_model.joblib')
-    scaler = joblib.load('scaler.joblib')
+    # Load model and scaler using pickle
+    with open('gradient_boosting_model.pkl', 'rb') as f:
+        gb_model = pickle.load(f)
+    with open('scaler.pkl', 'rb') as f:
+        scaler = pickle.load(f)
+
+    # Load training columns using joblib
     training_columns = joblib.load('training_columns.joblib')
+
 except FileNotFoundError:
     st.error("Model, scaler, or training columns file not found. Please ensure they are in the correct directory.")
     st.stop() # Stop the app if files are not found
@@ -72,7 +79,6 @@ numerical_cols = [col for col, info in feature_info.items() if info['type'] == '
 
 # Scale the numerical features
 # Select only the numerical columns from the reindexed DataFrame for scaling
-# Ensure only numerical columns that exist in the encoded df are selected for scaling
 numerical_cols_in_encoded_df = [col for col in numerical_cols if col in input_df_encoded.columns]
 input_df_encoded[numerical_cols_in_encoded_df] = scaler.transform(input_df_encoded[numerical_cols_in_encoded_df])
 
