@@ -21,7 +21,7 @@ feature_info = {
     'day': {'type': 'number', 'label': 'Day'},
     'duration': {'type': 'number', 'label': 'Duration (seconds)'},
     'campaign': {'type': 'number', 'label': 'Campaign (number of contacts)'},
-    'pdays': {'type': 'number', 'label': 'Pdays (days since last contact')}, # Corrected label typo
+    'pdays': {'type': 'number', 'label': 'Pdays (days since last contact)'}, # Corrected label typo
     'previous': {'type': 'number', 'label': 'Previous (number of previous contacts)'},
     'job': {'type': 'category', 'label': 'Job', 'options': ['management', 'technician', 'entrepreneur', 'blue-collar', 'unknown', 'retired', 'admin.', 'services', 'self-employed', 'unemployed', 'housemaid', 'student']},
     'marital': {'type': 'category', 'label': 'Marital Status', 'options': ['married', 'single', 'divorced']},
