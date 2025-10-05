@@ -21,7 +21,7 @@ feature_info = {
     'day': {'type': 'number', 'label': 'Day'},
     'duration': {'type': 'number', 'label': 'Duration (seconds)'},
     'campaign': {'type': 'number', 'label': 'Campaign (number of contacts)'},
-    'pdays': {'type': 'number', 'label': 'Pdays (days since last contact)'},
+    'pdays': {'type': 'number', 'label': 'Pdays (days since last contact')}, # Corrected label typo
     'previous': {'type': 'number', 'label': 'Previous (number of previous contacts)'},
     'job': {'type': 'category', 'label': 'Job', 'options': ['management', 'technician', 'entrepreneur', 'blue-collar', 'unknown', 'retired', 'admin.', 'services', 'self-employed', 'unemployed', 'housemaid', 'student']},
     'marital': {'type': 'category', 'label': 'Marital Status', 'options': ['married', 'single', 'divorced']},
@@ -51,13 +51,9 @@ categorical_cols = [col for col, info in feature_info.items() if info['type'] ==
 input_df_encoded = pd.get_dummies(input_df, columns=categorical_cols, drop_first=True)
 
 # Ensure the input DataFrame has the same columns as the training data
-# Add missing columns and reindex to match the training columns order
-missing_cols = set(training_columns) - set(input_df_encoded.columns)
-for c in missing_cols:
-    input_df_encoded[c] = 0
-
 # Reindex to ensure the order of columns is the same as in the training data
-input_df_encoded = input_df_encoded[training_columns]
+# This will also add any missing columns that were present in training but not in the input
+input_df_encoded = input_df_encoded.reindex(columns=training_columns, fill_value=0)
 
 # Identify numerical columns in the potentially encoded input DataFrame
 # These should be the original numerical columns before one-hot encoding
