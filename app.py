@@ -2,17 +2,19 @@ import streamlit as st
 import joblib
 import pandas as pd
 
-# Load the trained model and scaler
+# Load the trained model, scaler, and training column names
 gb_model = joblib.load('gradient_boosting_model.joblib')
 scaler = joblib.load('scaler.joblib')
+training_columns = joblib.load('training_columns.joblib')
+
 
 st.title('Bank Marketing Prediction')
 st.write('Predict whether a customer will subscribe to a term deposit.')
 
 st.header('Enter Customer Details:')
 
-# Define the list of features and their types based on the training data
-# Hardcoding unique values for categorical features as df is not available in app.py
+# Define the list of features and their types based on the original data
+# Hardcoding unique values for categorical features
 feature_info = {
     'age': {'type': 'number', 'label': 'Age'},
     'balance': {'type': 'number', 'label': 'Balance'},
@@ -48,44 +50,22 @@ input_df = pd.DataFrame([input_data])
 categorical_cols = [col for col, info in feature_info.items() if info['type'] == 'category']
 input_df_encoded = pd.get_dummies(input_df, columns=categorical_cols, drop_first=True)
 
-# Ensure the input DataFrame has the same columns as the training data (X_train)
-# Add missing columns (due to one-hot encoding not covering all categories in input)
-# This requires access to X_train.columns, which is available in the notebook environment
-# but not directly in the standalone app. A robust solution for deployment would save
-# the list of columns during training and load it here. For this example, we'll
-# assume X_train.columns is represented by a variable available or hardcoded.
-# Since X_train is a global variable in the Colab environment, let's generate code
-# to save the column names and load them in the app.
-
-# Note: In a real deployment scenario, you would save X_train.columns to a file
-# during your training phase and load it in app.py. For this Colab context,
-# I will include a placeholder comment and assume X_train_columns is somehow available
-# or you would handle this by saving the columns when saving the model/scaler.
-
-# A more robust way would be to save the columns list during training:
-# joblib.dump(X_train.columns.tolist(), 'training_columns.joblib')
-# And load it here:
-# training_columns = joblib.load('training_columns.joblib')
-# missing_cols = set(training_columns) - set(input_df_encoded.columns)
-
-# For now, let's use the X_train columns from the current notebook state for generation
-# In your actual deployment, ensure you have the correct column order/names.
-# Assuming X_train.columns is available from the notebook state for code generation:
-training_columns = ["age", "balance", "day", "duration", "campaign", "pdays", "previous", "job_blue-collar", "job_entrepreneur", "job_housemaid", "job_management", "job_retired", "job_self-employed", "job_services", "job_student", "job_technician", "job_unemployed", "job_unknown", "marital_married", "marital_single", "education_secondary", "education_tertiary", "education_unknown", "default_yes", "housing_yes", "loan_yes", "contact_cellular", "contact_telephone", "contact_unknown", "month_aug", "month_dec", "month_feb", "month_jan", "month_jul", "month_jun", "month_mar", "month_may", "month_nov", "month_oct", "month_sep", "poutcome_other", "poutcome_success", "poutcome_unknown"] # Example columns based on notebook state
-
+# Ensure the input DataFrame has the same columns as the training data
+# Add missing columns and reindex to match the training columns order
 missing_cols = set(training_columns) - set(input_df_encoded.columns)
 for c in missing_cols:
     input_df_encoded[c] = 0
 
-# Ensure the order of columns is the same as in the training data
+# Reindex to ensure the order of columns is the same as in the training data
 input_df_encoded = input_df_encoded[training_columns]
 
 # Identify numerical columns in the potentially encoded input DataFrame
-# This also ideally should be derived from the saved training columns and types
-numerical_cols_in_input = ["age", "balance", "day", "duration", "campaign", "pdays", "previous"] # Example numerical columns
+# These should be the original numerical columns before one-hot encoding
+numerical_cols = [col for col, info in feature_info.items() if info['type'] == 'number']
 
 # Scale the numerical features
-input_df_encoded[numerical_cols_in_input] = scaler.transform(input_df_encoded[numerical_cols_in_input])
+# Select only the numerical columns from the reindexed DataFrame for scaling
+input_df_encoded[numerical_cols] = scaler.transform(input_df_encoded[numerical_cols])
 
 
 # Make a prediction when a button is clicked
