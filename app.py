@@ -3,9 +3,15 @@ import joblib
 import pandas as pd
 
 # Load the trained model, scaler, and training column names
-gb_model = joblib.load('gradient_boosting_model.joblib')
-scaler = joblib.load('scaler.joblib')
-training_columns = joblib.load('training_columns.joblib')
+# Make sure these files (gradient_boosting_model.joblib, scaler.joblib, training_columns.joblib)
+# are in the same directory as your app.py file when deploying.
+try:
+    gb_model = joblib.load('gradient_boosting_model.joblib')
+    scaler = joblib.load('scaler.joblib')
+    training_columns = joblib.load('training_columns.joblib')
+except FileNotFoundError:
+    st.error("Model, scaler, or training columns file not found. Please ensure they are in the correct directory.")
+    st.stop() # Stop the app if files are not found
 
 
 st.title('Bank Marketing Prediction')
@@ -16,13 +22,13 @@ st.header('Enter Customer Details:')
 # Define the list of features and their types based on the original data
 # Hardcoding unique values for categorical features
 feature_info = {
-    'age': {'type': 'number', 'label': 'Age'},
-    'balance': {'type': 'number', 'label': 'Balance'},
-    'day': {'type': 'number', 'label': 'Day'},
-    'duration': {'type': 'number', 'label': 'Duration (seconds)'},
-    'campaign': {'type': 'number', 'label': 'Campaign (number of contacts)'},
-    'pdays': {'type': 'number', 'label': 'Pdays (days since last contact)'}, # Corrected label typo
-    'previous': {'type': 'number', 'label': 'Previous (number of previous contacts)'},
+    'age': {'type': 'number', 'label': 'Age', 'min_value': 0, 'max_value': 120, 'step': 1},
+    'balance': {'type': 'number', 'label': 'Balance', 'min_value': -10000, 'max_value': 100000, 'step': 1}, # Example ranges
+    'day': {'type': 'number', 'label': 'Day', 'min_value': 1, 'max_value': 31, 'step': 1},
+    'duration': {'type': 'number', 'label': 'Duration (seconds)', 'min_value': 0, 'max_value': 5000, 'step': 1}, # Example ranges
+    'campaign': {'type': 'number', 'label': 'Campaign (number of contacts)', 'min_value': 1, 'max_value': 60, 'step': 1}, # Example ranges
+    'pdays': {'type': 'number', 'label': 'Pdays (days since last contact)', 'min_value': -1, 'max_value': 900, 'step': 1}, # Example ranges, -1 for never contacted
+    'previous': {'type': 'number', 'label': 'Previous (number of previous contacts)', 'min_value': 0, 'max_value': 300, 'step': 1}, # Example ranges
     'job': {'type': 'category', 'label': 'Job', 'options': ['management', 'technician', 'entrepreneur', 'blue-collar', 'unknown', 'retired', 'admin.', 'services', 'self-employed', 'unemployed', 'housemaid', 'student']},
     'marital': {'type': 'category', 'label': 'Marital Status', 'options': ['married', 'single', 'divorced']},
     'education': {'type': 'category', 'label': 'Education', 'options': ['tertiary', 'secondary', 'unknown', 'primary']},
@@ -38,7 +44,12 @@ feature_info = {
 input_data = {}
 for feature, info in feature_info.items():
     if info['type'] == 'number':
-        input_data[feature] = st.number_input(info['label'], value=0, step=1)
+        # Use min_value, max_value, and step from feature_info
+        input_data[feature] = st.number_input(info['label'],
+                                              min_value=info.get('min_value', 0),
+                                              max_value=info.get('max_value', None),
+                                              step=info.get('step', 1),
+                                              value=info.get('min_value', 0)) # Set default value
     elif info['type'] == 'category':
         input_data[feature] = st.selectbox(info['label'], info['options'])
 
@@ -55,13 +66,15 @@ input_df_encoded = pd.get_dummies(input_df, columns=categorical_cols, drop_first
 # This will also add any missing columns that were present in training but not in the input
 input_df_encoded = input_df_encoded.reindex(columns=training_columns, fill_value=0)
 
-# Identify numerical columns in the potentially encoded input DataFrame
-# These should be the original numerical columns before one-hot encoding
+# Identify numerical columns based on feature_info
 numerical_cols = [col for col, info in feature_info.items() if info['type'] == 'number']
+
 
 # Scale the numerical features
 # Select only the numerical columns from the reindexed DataFrame for scaling
-input_df_encoded[numerical_cols] = scaler.transform(input_df_encoded[numerical_cols])
+# Ensure only numerical columns that exist in the encoded df are selected for scaling
+numerical_cols_in_encoded_df = [col for col in numerical_cols if col in input_df_encoded.columns]
+input_df_encoded[numerical_cols_in_encoded_df] = scaler.transform(input_df_encoded[numerical_cols_in_encoded_df])
 
 
 # Make a prediction when a button is clicked
